@@ -1,4 +1,7 @@
-Libraries: pytorch, pytorch_geometric, geoopt
+# Weisfeiler and Leman go Hyperbolic: Learning Distance Preserving Node Representations (WLHN)
+This is the official implementation of the paper [Weisfeiler and Leman go Hyperbolic: Learning Distance Preserving Node Representations (WLHN)(https://arxiv.org/abs/2211.02501)
+
+Libraries: pytorch, pytorch_geometric
 
 To train our model WLHN, use the above command:
 python tu_dataset.py 
