@@ -1,5 +1,5 @@
-# Weisfeiler and Leman go Hyperbolic: Learning Distance Preserving Node Representations (WLHN)
-This is the official implementation of the paper [Weisfeiler and Leman go Hyperbolic: Learning Distance Preserving Node Representations (WLHN)(https://arxiv.org/abs/2211.02501)
+#Weisfeiler and Leman go Hyperbolic: Learning Distance Preserving Node Representations (WLHN)
+This is the official implementation of the paper "Weisfeiler and Leman go Hyperbolic: Learning Distance Preserving Node Representations (WLHN)" https://arxiv.org/abs/2211.02501 , accepted at AISTATS2023
 
 Libraries: pytorch, pytorch_geometric
 
