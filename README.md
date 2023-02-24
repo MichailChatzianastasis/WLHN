@@ -27,14 +27,13 @@ Arguments:
 --classifier " Classifier (hyperbolic_mlr, logmap)
 --hyperbolic-optimizer "Whether to use hyperbolic optimizer"
 ```
-## Contribution
-- Giannis Nikolentzos
-- Michail Chatzianastasis  
-- Michalis Vazirgiannis 
-
-
-
-
-
- 
-
+## Cite
+Please cite our paper if you use this code:
+```
+@inproceedings{nikolentzos2022weisfeiler,
+  title={Weisfeiler and Leman go Hyperbolic: Learning Distance Preserving Node Representations},
+  author={Nikolentzos, Giannis and Chatzianastasis, Michail and Vazirgiannis, Michalis},
+  booktitle={Proceedings of the 26th International Conference on Artificial Intelligence and Statistics},
+  year={2023}
+}
+```
