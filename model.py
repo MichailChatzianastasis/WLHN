@@ -1,16 +1,14 @@
-import networkx as nx
-import numpy as np
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 
 from torch_geometric.nn import GINConv
-from torch_scatter import scatter_add, scatter_mean
-from ogb.graphproppred.mol_encoder import AtomEncoder,BondEncoder
+from torch_scatter import scatter_add
 
 from hypernn import MobiusMLR, MobiusLinear
+
+from math import sqrt
 
 MIN_NORM = 1e-15
 BALL_EPS = {torch.float32: 4e-3, torch.float64: 1e-5}
@@ -22,12 +20,10 @@ class WLHN(nn.Module):
         self.classifier = classifier
         
         self.scaling = torch.tanh(torch.tensor(tau / 2))
-        self.atom_encoder = AtomEncoder(hidden_dim)
 
         self.fc0 = nn.Linear(input_dim, hidden_dim)
 
-        self.p = torch.zeros(hidden_dim, requires_grad=False)
-        self.p[-1] = 1 
+        self.p = (-1./sqrt(hidden_dim))*torch.ones(hidden_dim, requires_grad=False)
 
         lst = list()
         lst.append(GINConv(
@@ -126,43 +122,40 @@ class WLHN(nn.Module):
 
     def forward(self, data):
         x, edge_index = data.x, data.edge_index
-        #x = self.atom_encoder(x)
         x = self.relu(self.fc0(x))
         xs = [x]
         z = [torch.zeros(1, x.size(1), device=x.device, requires_grad=False)]
         inv = [torch.zeros(x.size(0), dtype=torch.long, device=x.device, requires_grad=False)]
         with torch.no_grad():
             unique_all, inv_all = torch.unique(x, sorted=False, return_inverse=True, dim=0)
-        unique_norm_all = self.project(unique_all)
-        z.append(self.scaling*unique_norm_all)
+        unique_all_norm = unique_all/torch.norm(unique_all, dim=1).unsqueeze(1)
+        u = [unique_all]
+        z.append(self.scaling*unique_all_norm)
         inv.append(inv_all)
         for i in range(self.n_layers):
             x = self.conv[i](x, edge_index)
-            diag = torch.zeros(x.size(1), x.size(1)-1, device=x.device, requires_grad=False)
-            diag.fill_diagonal_(1)
-            diag = torch.cat([diag, torch.zeros(x.size(1), 1, device=x.device)], dim=1)
-            x = torch.mm(x, diag)
+            
             xs.append(x)
             with torch.no_grad():
                 unique_all, inv_all, count_all = torch.unique(torch.cat(xs, dim=1), sorted=False, return_inverse=True, return_counts=True, dim=0)
             
             unique_all = unique_all[:,-x.size(1):]
-            unique_all_norm = self.project(unique_all)
+            unique_all_norm = unique_all/torch.norm(unique_all, dim=1).unsqueeze(1)
             z_children = self.scaling*unique_all_norm
             t = torch.zeros(unique_all.size(0), dtype=torch.long, device=x.device)
-            t.scatter_add_(0, inv_all, inv[i+1])
+            t.scatter_add_(0, inv_all, inv[i])
             t = torch.div(t, count_all).long()
-            z_current = torch.gather(z[i+1], 0, t.unsqueeze(1).repeat(1, z[i+1].size(1)))
+            z_current = torch.gather(z[i], 0, t.unsqueeze(1).repeat(1, z[i].size(1)))
             t = torch.zeros(unique_all.size(0), dtype=torch.long, device=x.device)
             t.scatter_add_(0, inv_all, inv[i])
             t = torch.div(t, count_all).long()
             z_parent = torch.gather(z[i], 0, t.unsqueeze(1).repeat(1, z[i].size(1)))
             z_parent = self.reflect_at_zero(z_parent, z_current)
-            z_children = self.reflect_through_zero(z_parent, self.p.to(x.device), z_children)
+            z_children = self.reflect_through_zero(z_parent, self.scaling*self.p.to(x.device), z_children)
             z_all = self.reflect_at_zero(z_children, z_current)
             inv.append(inv_all)
             z.append(z_all)
-        
+            
         x = self.logmap0(z[-1])
         x = torch.index_select(x, 0, inv[-1])
         out = scatter_add(x, data.batch, dim=0)
@@ -176,6 +169,9 @@ class WLHN(nn.Module):
             out = self.fc3(out)
         else:
             out = self.relu(self.fc1(out))
+            out = self.dropout(out)
             out = self.relu(self.fc2(out))
+            out = self.dropout(out)
             out = self.fc3(out)
+            
         return F.log_softmax(out, dim=1)
