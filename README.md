@@ -5,7 +5,10 @@
 This repository is the original implementation of the paper titled [Weisfeiler and Leman go Hyperbolic: Learning Distance Preserving Node Representations](https://arxiv.org/abs/2211.02501), accepted at AISTATS2023.
 
 ## Requirements
-Libraries: pytorch, pytorch_geometric
+Code is written in Python 3.9 and requires:
+* PyTorch 1.12
+* PyTorch Geometric 2.1
+* geoopt 0.5
 
 
 ## Usage
@@ -22,9 +25,9 @@ Arguments:
 --batch-size "Input batch size for training"
 --epochs "Number of epochs to train"
 --hidden-dim "Size of hidden layer"
---tau "Tau value for Sarkar's construction"
+--tau "Tau value for DiffHypCon construction"
 --depth "Depth of WL tree"
---classifier " Classifier (hyperbolic_mlr, logmap)
+--classifier "Classifier (hyperbolic_mlr or logmap)
 --hyperbolic-optimizer "Whether to use hyperbolic optimizer"
 ```
 ## Cite
