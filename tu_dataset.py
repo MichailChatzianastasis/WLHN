@@ -3,7 +3,6 @@ import time
 import json
 import numpy as np
 import geoopt as gt
-#import distutils.util
 
 import torch
 import torch.nn.functional as F
