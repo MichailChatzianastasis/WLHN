@@ -2,9 +2,8 @@ import argparse
 import time
 import json
 import numpy as np
-import networkx as nx
 import geoopt as gt
-import distutils.util
+#import distutils.util
 
 import torch
 import torch.nn.functional as F
@@ -28,17 +27,16 @@ class Degree(object):
 
 # Argument parser
 parser = argparse.ArgumentParser(description='HGNN')
-parser.add_argument('--dataset', default='MUTAG', help='Dataset name')
+parser.add_argument('--dataset', default='IMDB-BINARY', help='Dataset name')
 parser.add_argument('--lr', type=float, default=0.001, help='Initial learning rate')
-parser.add_argument('--dropout', type=float, default=0.5, help='Dropout rate (1 - keep probability).')
-parser.add_argument('--batch-size', type=int, default=128, help='Input batch size for training')
+parser.add_argument('--dropout', type=float, default=0.2, help='Dropout rate (1 - keep probability).')
+parser.add_argument('--batch-size', type=int, default=64, help='Input batch size for training')
 parser.add_argument('--epochs', type=int, default=300, help='Number of epochs to train')
 parser.add_argument('--hidden-dim', type=int, default=16, help='Size of hidden layer of NN')
-parser.add_argument('--tau', type=float, default=1., help="Tau value for Sarkar's algorithm")
-parser.add_argument('--depth', type=int, default=1, help='Depth of WL tree')
-parser.add_argument('--classifier', default='logmap', help='Classifier (hyperbolic_mlr, logmap or centroid_distance)')
-#parser.add_argument('--n-centroids', type=int, default=200, help='Number of centroids in case centroid_distance classifier is employed')
-parser.add_argument('--hyperbolic-optimizer', type=int, default=0, help='Whether to use hyperbolic optimizer')
+parser.add_argument('--tau', type=float, default=1., help='Tau value for DiffHypCon construction')
+parser.add_argument('--depth', type=int, default=2, help='Depth of WL tree')
+parser.add_argument('--classifier', type=str, default='logmap', choices=['hyperbolic_mlr', 'logmap'], help='Classifier')
+parser.add_argument('--hyperbolic-optimizer', action='store_true', default=False, help='Whether to use hyperbolic optimizer')
 args = parser.parse_args()
 
 use_node_attr = False
@@ -55,7 +53,7 @@ with open('data_splits/'+args.dataset+'_splits.json','rt') as f:
         splits = json.loads(line)
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-#torch.set_default_dtype(torch.float32)
+torch.set_default_dtype(torch.float32)
 
 def train(epoch, loader, optimizer):
     model.train()
@@ -97,7 +95,6 @@ for i in range(10):
     if (args.hyperbolic_optimizer == 1):
         optimizer = gt.optim.RiemannianAdam(model.parameters(), lr=args.lr, stabilize=5)
     else:
-        print("outside")
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     train_index = splits[i]['model_selection'][0]['train']
@@ -134,5 +131,3 @@ for i in range(10):
 acc = torch.tensor(acc)
 print('---------------- Final Result ----------------')
 print('Mean: {:7f}, Std: {:7f}'.format(acc.mean(), acc.std()))
-
- 
