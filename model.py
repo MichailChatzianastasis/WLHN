@@ -134,7 +134,7 @@ class WLHN(nn.Module):
         inv.append(inv_all)
         for i in range(self.n_layers):
             x = self.conv[i](x, edge_index)
-            
+
             xs.append(x)
             with torch.no_grad():
                 unique_all, inv_all, count_all = torch.unique(torch.cat(xs, dim=1), sorted=False, return_inverse=True, return_counts=True, dim=0)
@@ -143,15 +143,15 @@ class WLHN(nn.Module):
             unique_all_norm = unique_all/torch.norm(unique_all, dim=1).unsqueeze(1)
             z_children = self.scaling*unique_all_norm
             t = torch.zeros(unique_all.size(0), dtype=torch.long, device=x.device)
-            t.scatter_add_(0, inv_all, inv[i])
+            t.scatter_add_(0, inv_all, inv[i+1])
             t = torch.div(t, count_all).long()
-            z_current = torch.gather(z[i], 0, t.unsqueeze(1).repeat(1, z[i].size(1)))
+            z_current = torch.gather(z[i+1], 0, t.unsqueeze(1).repeat(1, z[i+1].size(1)))
             t = torch.zeros(unique_all.size(0), dtype=torch.long, device=x.device)
             t.scatter_add_(0, inv_all, inv[i])
             t = torch.div(t, count_all).long()
             z_parent = torch.gather(z[i], 0, t.unsqueeze(1).repeat(1, z[i].size(1)))
             z_parent = self.reflect_at_zero(z_parent, z_current)
-            z_children = self.reflect_through_zero(z_parent, self.scaling*self.p.to(x.device), z_children)
+            z_children = self.reflect_through_zero(z_parent, self.p.to(x.device), z_children)
             z_all = self.reflect_at_zero(z_children, z_current)
             inv.append(inv_all)
             z.append(z_all)
